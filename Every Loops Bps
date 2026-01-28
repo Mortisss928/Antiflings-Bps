@@ -123,7 +123,7 @@ RunService.Heartbeat:Connect(function()
                 if part:IsA("Part") or part:IsA("MeshPart") then
                     pcall(function()
                         char.Picking:FireServer(part, Vector3.new(9e37, -9e37, 9e37))
-                        task.wait()
+                        task.wait(0.005)
                         char.PuttingDown:FireServer()
                     end)
                 end
