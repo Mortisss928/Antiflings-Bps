@@ -1,0 +1,151 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local loopTarget = false
+local loopAll = false
+local targetName = nil
+local whitelist = {}
+
+local function isWhitelisted(name)
+    return table.find(whitelist, name) ~= nil
+end
+
+local function resolvePlayer(input)
+    input = string.lower(input)
+    for _, p in pairs(Players:GetPlayers()) do
+        if string.find(string.lower(p.Name), input)
+        or string.find(string.lower(p.DisplayName), input) then
+            return p
+        end
+    end
+end
+
+-- GUI
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "AllLoopsGui"
+ScreenGui.ResetOnSpawn = false
+
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 320, 0, 320)
+Frame.Position = UDim2.new(0.35, 0, 0.3, 0)
+Frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+Frame.Active = true
+Frame.Draggable = true
+Instance.new("UICorner", Frame)
+
+local function makeLabel(text, y)
+    local l = Instance.new("TextLabel", Frame)
+    l.Size = UDim2.new(1, -20, 0, 24)
+    l.Position = UDim2.new(0, 10, 0, y)
+    l.Text = text
+    l.TextColor3 = Color3.new(1,1,1)
+    l.BackgroundTransparency = 1
+    l.Font = Enum.Font.SourceSansBold
+    l.TextSize = 16
+    return l
+end
+
+local function makeBox(placeholder, y)
+    local b = Instance.new("TextBox", Frame)
+    b.Size = UDim2.new(1, -20, 0, 28)
+    b.Position = UDim2.new(0, 10, 0, y)
+    b.PlaceholderText = placeholder
+    b.Text = ""
+    b.BackgroundColor3 = Color3.fromRGB(45,45,45)
+    b.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", b)
+    return b
+end
+
+local function makeButton(text, y, color)
+    local btn = Instance.new("TextButton", Frame)
+    btn.Size = UDim2.new(1, -20, 0, 28)
+    btn.Position = UDim2.new(0, 10, 0, y)
+    btn.Text = text
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", btn)
+    return btn
+end
+
+makeLabel("ALL LOOP CONTROLLER", 5)
+
+local TargetBox = makeBox("Target name", 35)
+local LoopTargetBtn = makeButton("Loop Target (V1+V2+V3+V4)", 70, Color3.fromRGB(70,70,70))
+local LoopAllBtn = makeButton("Loop All Players", 105, Color3.fromRGB(120,60,60))
+local StopBtn = makeButton("STOP ALL LOOPS", 140, Color3.fromRGB(60,120,60))
+
+makeLabel("Whitelist", 180)
+local WLBox = makeBox("Player to whitelist", 210)
+local AddWL = makeButton("Add to Whitelist", 245, Color3.fromRGB(70,70,120))
+local ClearWL = makeButton("Clear Whitelist", 280, Color3.fromRGB(120,70,70))
+
+LoopTargetBtn.MouseButton1Click:Connect(function()
+    local p = resolvePlayer(TargetBox.Text)
+    if p then
+        targetName = p.Name
+        loopTarget = true
+        loopAll = false
+    end
+end)
+
+LoopAllBtn.MouseButton1Click:Connect(function()
+    loopAll = true
+    loopTarget = false
+end)
+
+StopBtn.MouseButton1Click:Connect(function()
+    loopTarget = false
+    loopAll = false
+    targetName = nil
+end)
+
+AddWL.MouseButton1Click:Connect(function()
+    local p = resolvePlayer(WLBox.Text)
+    if p and not isWhitelisted(p.Name) then
+        table.insert(whitelist, p.Name)
+    end
+end)
+
+ClearWL.MouseButton1Click:Connect(function()
+    table.clear(whitelist)
+end)
+
+RunService.Heartbeat:Connect(function()
+    local char = LocalPlayer.Character
+    if not char then return end
+
+    if loopTarget and targetName then
+        local targetChar = workspace:FindFirstChild(targetName)
+        if targetChar then
+            for _, part in pairs(targetChar:GetDescendants()) do
+                if part:IsA("Part") or part:IsA("MeshPart") then
+                    pcall(function()
+                        char.Picking:FireServer(part, Vector3.new(9e37, -9e37, 9e37))
+                        task.wait()
+                        char.PuttingDown:FireServer()
+                    end)
+                end
+            end
+        end
+    end
+
+    if loopAll then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character and not isWhitelisted(p.Name) then
+                pcall(function()
+                    p.Character.ArmAngleChange:FireServer(
+                        CFrame.new(9e37, -9e37, 9e37)
+                    )
+                    char.Picking:FireServer(
+                        p.Character.HumanoidRootPart,
+                        Vector3.new(9e37, -9e37, 9e37)
+                    )
+                    task.wait(0.005)
+                    char.PuttingDown:FireServer()
+                end)
+            end
+        end
+    end
+end)
