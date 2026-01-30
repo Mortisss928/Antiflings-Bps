@@ -1,0 +1,41 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local processed = {}
+local exclude = {LocalPlayer.Name} -- ici tu peux mettre tous ceux à exclure
+
+local function isExcluded(player)
+    return table.find(exclude, player.Name) ~= nil
+end
+
+RunService.Heartbeat:Connect(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character and not isExcluded(player) then
+            local char = player.Character
+            local anvil = char:FindFirstChild("Anvil")
+            if anvil and anvil:FindFirstChild("send") then
+                if not processed[anvil] then
+                    processed[anvil] = true
+                    anvil.send:FireServer(CFrame.new(9e37, -9e37, 9e37))
+                    if char:FindFirstChild("ArmAngleChange") then
+                        char.ArmAngleChange:FireServer(CFrame.new(9e37, -9e37, 9e37))
+                    end
+                    for _, part in ipairs(char:GetDescendants()) do
+                        if part:IsA("MeshPart") then
+                            if LocalPlayer.Character then
+                                LocalPlayer.Character.Picking:FireServer(part, Vector3.new(9e37, -9e37, 9e37))
+                                task.wait(0.005)
+                                LocalPlayer.Character.PuttingDown:FireServer()
+                            end
+                        end
+                    end
+                end
+            else
+                if anvil then
+                    processed[anvil] = nil
+                end
+            end
+        end
+    end
+end)
