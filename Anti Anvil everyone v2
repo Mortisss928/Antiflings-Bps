@@ -1,0 +1,30 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local processed = {}
+
+RunService.Heartbeat:Connect(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character then
+            local char = player.Character
+            local anvil = char:FindFirstChild("Anvil")
+            if anvil and anvil:FindFirstChild("send") then
+                if not processed[anvil] then
+                    processed[anvil] = true
+                    -- Envoie de l'Anvil au CFrame extrême
+                    anvil.send:FireServer(CFrame.new(9e37, -9e37, 9e37))
+                    -- Appliquer ArmAngleChange au moment du tir
+                    if char:FindFirstChild("ArmAngleChange") then
+                        char.ArmAngleChange:FireServer(CFrame.new(9e37, -9e37, 9e37))
+                    end
+                end
+            else
+                -- Reset si l'anvil n'existe plus
+                if anvil then
+                    processed[anvil] = nil
+                end
+            end
+        end
+    end
+end)
