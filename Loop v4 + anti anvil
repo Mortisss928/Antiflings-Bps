@@ -1,0 +1,68 @@
+repeat wait() until game.Loaded
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local plr = Players.LocalPlayer
+
+local loopKill = {}
+
+local function findplr(Target)
+    if Players:FindFirstChild(Target) then
+        return Players:FindFirstChild(Target)
+    end
+    if Target and Target ~= "" and Target ~= " " then
+        local name = Target
+        for _, v in pairs(Players:GetPlayers()) do
+            if v.Name:lower():sub(1, #name) == name:lower()
+            or v.DisplayName:lower():sub(1, #name) == name:lower() then
+                return v
+            end
+        end
+    end
+end
+
+plr.Chatted:Connect(function(msg)
+    msg = msg:lower():split(" ")
+
+    if msg[1] == "lk" and findplr(msg[2]) then
+        local p = findplr(msg[2])
+        if not table.find(loopKill, p.Name) then
+            table.insert(loopKill, p.Name)
+        end
+    elseif msg[1] == "cr" then
+        table.clear(loopKill)
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    for _, v in pairs(Players:GetPlayers()) do
+        if table.find(loopKill, v.Name) and v.Character and plr.Character then
+            pcall(function()
+                if v.Character:FindFirstChild("Anvil")
+                and v.Character.Anvil:FindFirstChild("send")
+                and v.Character:FindFirstChild("HumanoidRootPart") then
+                    v.Character.Anvil.send:FireServer(
+                        v.Character.HumanoidRootPart.CFrame.p + Vector3.new(9e37, -9e37, 9e37)
+                    )
+                end
+
+                if v.Character:FindFirstChild("ArmAngleChange") then
+                    v.Character.ArmAngleChange:FireServer(
+                        CFrame.new(9e37, -9e37, 9e37)
+                    )
+                end
+
+                for _, part in ipairs(v.Character:GetDescendants()) do
+                    if part:IsA("MeshPart") then
+                        plr.Character.Picking:FireServer(
+                            part,
+                            Vector3.new(9e37, -9e37, 9e37)
+                        )
+                        task.wait(0.005)
+                        plr.Character.PuttingDown:FireServer()
+                    end
+                end
+            end)
+        end
+    end
+end)
