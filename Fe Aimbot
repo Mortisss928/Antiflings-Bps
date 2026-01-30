@@ -1,0 +1,92 @@
+local RADIUS_MAX = math.huge
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Character = nil
+local Root = nil
+local lockedTargetRoot = nil
+
+local function onCharacterAdded(char)
+Character = char
+Root = char:WaitForChild("HumanoidRootPart")
+lockedTargetRoot = nil
+end
+
+if LocalPlayer.Character then
+onCharacterAdded(LocalPlayer.Character)
+end
+
+LocalPlayer.CharacterAdded:Connect(onCharacterAdded)
+
+local function isValidTarget(character)
+if not character or not character.Parent then return false end
+if character == Character then return false end
+
+local hum = character:FindFirstChildOfClass("Humanoid")
+local root = character:FindFirstChild("HumanoidRootPart")
+
+return hum and root and hum.Health > 0 and not character:FindFirstChildOfClass("ForceField")
+end
+
+local function findNextVictim()
+if not Root then return nil end
+
+local closestRoot = nil
+local shortestDistance = RADIUS_MAX
+
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer and player.Character and isValidTarget(player.Character) then
+        local targetRoot = player.Character.HumanoidRootPart
+        local dist = (Root.Position - targetRoot.Position).Magnitude
+
+        if dist < shortestDistance then
+            shortestDistance = dist
+            closestRoot = targetRoot
+        end
+    end
+end
+
+return closestRoot
+end
+
+workspace.ChildAdded:Connect(function(obj)
+task.wait()
+
+if not obj:IsA("BasePart") then return end
+if not Root or not Root.Parent then return end
+if (obj.Position - Root.Position).Magnitude > 15 then return end
+
+if not lockedTargetRoot or not isValidTarget(lockedTargetRoot.Parent) then
+    lockedTargetRoot = findNextVictim()
+end
+if not lockedTargetRoot then return end
+
+local speed = obj.Velocity.Magnitude
+if speed < 10 then speed = 250 end
+
+local antiGrav = Instance.new("BodyForce")
+antiGrav.Force = Vector3.new(0, obj:GetMass() * workspace.Gravity, 0)
+antiGrav.Parent = obj
+
+task.spawn(function()
+    while obj and obj.Parent do
+        if not lockedTargetRoot or not isValidTarget(lockedTargetRoot.Parent) then
+            lockedTargetRoot = findNextVictim()
+        end
+
+        if lockedTargetRoot then
+            local dir = lockedTargetRoot.Position - obj.Position
+            if dir.Magnitude > 0.1 then
+                obj.Velocity = dir.Unit * speed
+                obj.CFrame = CFrame.lookAt(obj.Position, lockedTargetRoot.Position)
+            end
+            obj.CanCollide = false
+        end
+
+        task.wait()
+    end
+
+    antiGrav:Destroy()
+end)
+end)
