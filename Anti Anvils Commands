@@ -1,0 +1,35 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local targetName = nil
+
+local function getPlayer(str)
+    str = str:lower()
+    for _, v in pairs(Players:GetPlayers()) do
+        if v.Name:lower():sub(1, #str) == str or v.DisplayName:lower():sub(1, #str) == str then
+            return v.Name
+        end
+    end
+end
+
+LocalPlayer.Chatted:Connect(function(msg)
+    local args = string.split(msg, " ")
+    local cmd = args[1]:lower()
+    if cmd == ".anb" and args[2] then
+        targetName = getPlayer(args[2])
+    elseif cmd == ".clear" then
+        targetName = nil
+    end
+end)
+
+RunService.Heartbeat:Connect(function()
+    if targetName then
+        local p = Players:FindFirstChild(targetName)
+        if p and p.Character and p.Character:FindFirstChild("Anvil") then
+            pcall(function()
+                p.Character.Anvil.send:FireServer(CFrame.new(9e38, 9e38, 9e38))
+            end)
+        end
+    end
+end)
