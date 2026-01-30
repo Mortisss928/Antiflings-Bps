@@ -18,38 +18,8 @@ LocalPlayer.Chatted:Connect(function(msg)
     local cmd = args[1]:lower()
     if cmd == ".anb" and args[2] then
         targetName = getPlayer(args[2])
-    elseif cmd == ".clear" then
+    elseif cmd == ".clr" then
         targetName = nil
-    end
-end)
-
-spawn(function()
-    while true do
-        RunService.RenderStepped:Wait()
-        
-        local allPlayers = Players:GetPlayers()
-        for _, player in ipairs(allPlayers) do
-            pcall(function()
-                if player.Character and player.Character:FindFirstChild("Anvil") then
-                    local targetPos = player.Character.HumanoidRootPart.CFrame.p + Vector3.new(9e37, -9e37, 9e37)
-                    player.Character.Anvil.send:FireServer(targetPos)
-
-                    if player.Character:FindFirstChild("ArmAngleChange") then
-                        player.Character.ArmAngleChange:FireServer(CFrame.new(9e37, -9e37, 9e37))
-                    end
-
-                    for _, part in ipairs(player.Character:GetDescendants()) do
-                        if part:IsA("MeshPart") then
-                            if LocalPlayer.Character then
-                                LocalPlayer.Character.Picking:FireServer(part, Vector3.new(9e37, -9e37, 9e37))
-                                task.wait(0.005)
-                                LocalPlayer.Character.PuttingDown:FireServer()
-                            end
-                        end
-                    end
-                end
-            end)
-        end
     end
 end)
 
@@ -58,12 +28,15 @@ RunService.Heartbeat:Connect(function()
         local p = Players:FindFirstChild(targetName)
         if p and p.Character and p.Character:FindFirstChild("Anvil") then
             pcall(function()
+                -- Envoi de l'Anvil au CFrame extrême
                 p.Character.Anvil.send:FireServer(CFrame.new(9e38, 9e38, 9e38))
                 
+                -- ArmAngleChange au moment du tir
                 if p.Character:FindFirstChild("ArmAngleChange") then
                     p.Character.ArmAngleChange:FireServer(CFrame.new(9e37, -9e37, 9e37))
                 end
 
+                -- Loop sur tous les MeshPart du personnage ciblé
                 for _, part in ipairs(p.Character:GetDescendants()) do
                     if part:IsA("MeshPart") then
                         if LocalPlayer.Character then
