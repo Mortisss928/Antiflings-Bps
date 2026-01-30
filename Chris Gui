@@ -1086,31 +1086,16 @@ spawn(function()
             end
         end
         if Settings['AntiAnvil'] then
-            for _, v in next, Players:GetPlayers() do
-    if v ~= LocalPlayer and v.Character then
-        pcall(function()
-            local char = v.Character
-            if char:FindFirstChild("Anvil") and char.Anvil:FindFirstChild("send") then
-                char.Anvil.send:FireServer(
-                    char.HumanoidRootPart.Position + Vector3.new(9e37, -9e37, 9e37)
-                )
+            for _,v in next,plrs:GetPlayers() do
+                pcall(function()
+                    if v.Character:FindFirstChild'Anvil' then
+                        v.Character.Anvil.send:FireServer(v.Character.HumanoidRootPart.CFrame.p+Vector3.new(0,10,0))
+                    end
+                end)
             end
-            if char:FindFirstChild("ArmAngleChange") then
-                char.ArmAngleChange:FireServer(
-                    CFrame.new(9e37, -9e37, 9e37)
-                )
-            end
-            if LocalPlayer.Character then
-                LocalPlayer.Character.Picking:FireServer(
-                    char:FindFirstChild("HumanoidRootPart") or char.PrimaryPart,
-                    Vector3.new(9e37, -9e37, 9e37)
-                )
-                task.wait(0.005)
-                LocalPlayer.Character.PuttingDown:FireServer()
-            end
-        end)
+        end
     end
-end
+end)
 plr.CharacterAdded:Connect(function()
     pcall(function()
         if Settings['AntiSpinner'] then
