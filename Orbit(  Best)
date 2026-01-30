@@ -1,0 +1,118 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+game.Workspace.FallenPartsDestroyHeight = 0 / 0
+
+local ORBIT_RADIUS = 3
+local ORBIT_HEIGHT = 2
+local ORBIT_SPEED = 2
+local ANVIL_FORCE = -9e37
+
+local activeAnvils = {}
+local akaEnabled = false
+local persistentBlacklist = {} 
+local angle = 0
+
+local function prepareAnvil(anvil)
+    anvil.Anchored = false
+    anvil.CanCollide = false
+    anvil.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+end
+
+local function isAlive(plr)
+    return plr and plr.Character and plr.Character:FindFirstChild("Humanoid") and plr.Character.Humanoid.Health > 0 and plr.Character:FindFirstChild("HumanoidRootPart")
+end
+
+RunService.Heartbeat:Connect(function()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    angle += ORBIT_SPEED
+    
+    local currentTargets = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer and isAlive(p) then
+            if akaEnabled or persistentBlacklist[p.UserId] then
+                table.insert(currentTargets, p)
+            end
+        end
+    end
+
+    local anvilList = {}
+    for anvil in pairs(activeAnvils) do
+        if anvil.Parent then 
+            table.insert(anvilList, anvil) 
+        else 
+            activeAnvils[anvil] = nil 
+        end
+    end
+
+    for i, anvil in ipairs(anvilList) do
+        local spacing = (360 / #anvilList) * (i - 1)
+        local rad = math.rad(angle + spacing)
+        
+        local orbitPos = root.Position + Vector3.new(
+            math.cos(rad) * ORBIT_RADIUS,
+            ORBIT_HEIGHT,
+            math.sin(rad) * ORBIT_RADIUS
+        )
+
+        if #currentTargets > 0 then
+            local target = currentTargets[math.random(#currentTargets)]
+            local targetRoot = target.Character.HumanoidRootPart
+            
+            anvil.CFrame = CFrame.new(targetRoot.Position)
+            
+            if anvil:FindFirstChild("send") then
+                anvil.send:FireServer(CFrame.new(targetRoot.Position))
+            end
+
+            task.delay(0, function()
+                if anvil.Parent then
+                    anvil.CFrame = CFrame.new(orbitPos, root.Position)
+                end
+            end)
+        else
+            anvil.CFrame = CFrame.new(orbitPos, root.Position)
+            anvil.Velocity = (orbitPos - root.Position).Unit * ANVIL_FORCE
+        end
+    end
+end)
+
+local function checkAnvil(v)
+    if v.Name == "Anvil" and not activeAnvils[v] then
+        task.wait(0.1)
+        local s = v:FindFirstChild("Script")
+        if s and s:FindFirstChild("Value") and s.Value.Value == LocalPlayer then
+            prepareAnvil(v)
+            activeAnvils[v] = true
+        end
+    end
+end
+
+workspace.ChildAdded:Connect(checkAnvil)
+for _, v in ipairs(workspace:GetChildren()) do checkAnvil(v) end
+
+LocalPlayer.Chatted:Connect(function(message)
+    local args = string.split(message, " ")
+    local cmd = args[1]:lower()
+
+    if cmd == "+aka" then
+        akaEnabled = true
+    elseif cmd == "+akill" and args[2] then
+        local query = args[2]:lower()
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and (p.Name:lower():find(query) or p.DisplayName:lower():find(query)) then
+                persistentBlacklist[p.UserId] = true
+            end
+        end
+    elseif cmd == "+stop" then
+        akaEnabled = false
+        persistentBlacklist = {} 
+    elseif cmd == "+spinspeed" then
+        ORBIT_SPEED = tonumber(args[2]) or ORBIT_SPEED
+    end
+end)
+
