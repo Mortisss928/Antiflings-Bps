@@ -1,0 +1,47 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local TARGET_QUERY = "nom_ou_disp_ici"
+
+local function getTarget()
+    local q = TARGET_QUERY:lower()
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p.Name:lower():find(q) or p.DisplayName:lower():find(q) then
+            return p
+        end
+    end
+end
+
+while true do
+    local p = getTarget()
+    if p and p ~= LocalPlayer and p.Character then
+        local char = p.Character
+        local arm = char:FindFirstChild("ArmAngleChange")
+
+        if arm then
+            arm:FireServer(
+                CFrame.new(
+                    100000,
+                    121212121212.12122,
+                    0,
+                    0, 0.01, 0.1,
+                    0, 0, 0,
+                    0, 0, 1
+                )
+            )
+        end
+
+        if LocalPlayer.Character then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("MeshPart") then
+                    LocalPlayer.Character.Picking:FireServer(
+                        part,
+                        Vector3.new(math.huge, -math.huge, math.huge)
+                    )
+                end
+            end
+            LocalPlayer.Character.PuttingDown:FireServer()
+        end
+    end
+    wait(0.2)
+end
