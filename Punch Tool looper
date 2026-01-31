@@ -1,0 +1,88 @@
+local plrs = game:GetService('Players')
+local plr = plrs.LocalPlayer
+local mouse = plr:GetMouse()
+
+local function createTool(name, activateFunc)
+    local tool = Instance.new('Tool')
+    tool.Name = name
+    tool.RequiresHandle = false
+    tool.Activated:Connect(activateFunc)
+    tool.Parent = plr.Backpack
+end
+
+local function punchLogic()
+    local connection
+    local punchAnim = Instance.new('Animation')
+    punchAnim.Name = 'FakePunch'
+    punchAnim.AnimationId = 'rbxassetid://5193683418'
+
+    local function onTouch(hit)
+        if hit.Parent:FindFirstChildOfClass('Humanoid') then
+            local char = hit.Parent
+            plr.Character.PuttingDown:FireServer()
+            pcall(function()
+                local humanoid = plr.Character:FindFirstChildOfClass('Humanoid')
+                if humanoid then
+                    humanoid:LoadAnimation(punchAnim):Play()
+                end
+                
+                plr.Character.PuttingDown:FireServer()
+                plr.Character.Picking:FireServer(char.HumanoidRootPart, Vector3.new(math.huge, math.huge, math.huge))
+                char.HeadWaist:FireServer(CFrame.new(math.huge, -math.huge, math.huge))
+                char.ArmAngleChange:FireServer(CFrame.new(math.huge, -math.huge, math.huge))
+                wait(0.1)
+                plr.Character.PuttingDown:FireServer()
+            end)
+        elseif hit:IsA('BasePart') and not hit.Anchored and not hit:IsDescendantOf(plr.Character) then
+            plr.Character.PuttingDown:FireServer()
+            plr.Character.Picking:FireServer(hit, Vector3.new(math.huge, -math.huge, math.huge))
+            wait(0.1)
+            plr.Character.PuttingDown:FireServer()
+        end
+    end
+
+    return function(activate)
+        if activate then
+            connection = plr.Character.RightHand.Touched:Connect(onTouch)
+            pcall(function()
+                local humanoid = plr.Character:FindFirstChildOfClass('Humanoid')
+                if humanoid then
+                    humanoid:LoadAnimation(punchAnim):Play()
+                end
+            end)
+
+            pcall(function()
+                if workspace:FindFirstChild('Map') and workspace.Map:FindFirstChildOfClass('Model') and workspace.Map:FindFirstChildOfClass('Model'):FindFirstChild('Noob') then
+                    local noob = workspace.Map:FindFirstChildOfClass('Model').Noob
+                    if noob:FindFirstChild('Sword') then
+                        plr.Character.Picking:FireServer(noob.Sword, Vector3.new(math.huge, -math.huge, math.huge))
+                        wait(0.1)
+                        plr.Character.PuttingDown:FireServer()
+                    elseif noob:FindFirstChild('Handle') then
+                        plr.Character.Picking:FireServer(noob.Handle, Vector3.new(math.huge, -math.huge, math.huge))
+                        wait(0.1)
+                        plr.Character.PuttingDown:FireServer()
+                    end
+                end
+            end)
+        elseif connection then
+            connection:Disconnect()
+        end
+    end
+end
+
+local punch = punchLogic()
+
+local function onCharacterAdded(character)
+    if not plr.Backpack:FindFirstChild('PunchTool') then
+        createTool('PunchTool', function()
+            punch(true)
+        end)
+    end
+end
+
+plr.CharacterAdded:Connect(onCharacterAdded)
+
+if plr.Character then
+    onCharacterAdded(plr.Character)
+end
