@@ -33,7 +33,7 @@ RunService.Heartbeat:Connect(function()
                 
                 -- ArmAngleChange au moment du tir
                 if p.Character:FindFirstChild("ArmAngleChange") then
-                    p.Character.ArmAngleChange:FireServer(CFrame.new(9e37, -9e37, 9e37))
+                    p.Character.ArmAngleChange:FireServer(CFrame.new(100000, 121212121212.12122, 0, 0, 0.01, 0.1, 0, 0, 0, 0, 0, 1))
                 end
 
                 -- Loop sur tous les MeshPart du personnage ciblé
