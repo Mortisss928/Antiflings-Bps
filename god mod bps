@@ -1,0 +1,39 @@
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- CONFIGURATION
+local godModeEnabled = true
+
+-- LOGIQUE DU GOD MODE
+RunService.Heartbeat:Connect(function()
+    if not godModeEnabled then return end
+    
+    local character = LocalPlayer.Character
+    if character then
+        -- 1. Suppression des scripts de dégâts connus dans ce jeu
+        local damageScripts = {"VelocityDamage", "TakeDamage", "HitHandler"}
+        
+        for _, scriptName in pairs(damageScripts) do
+            local s = character:FindFirstChild(scriptName)
+            if s then
+                s.Disabled = true -- Désactive le script de dégâts
+                -- facultatif : s:Destroy() 
+            end
+        end
+
+        -- 2. Protection contre le Ragdoll (qui précède souvent la mort)
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false) -- Empêche l'état "Mort" local
+            
+            if humanoid.Health > 0 and humanoid.Health < 20 then
+                -- Tentative de bloquer la santé (visuel/local uniquement souvent)
+                humanoid.Health = 100 
+            end
+        end
+    end
+end)
+
+print("God Mode (Local) activé.")
