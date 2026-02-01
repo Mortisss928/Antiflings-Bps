@@ -1,0 +1,52 @@
+-- SERVICES
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+-- CONFIGURATION
+local autoAnvilEnabled = true
+local targetName = "" -- Laissez vide pour cibler tout le monde ou mettez un nom
+local killDistance = 50 -- Distance à laquelle l'enclume s'active
+
+-- FONCTION POUR TROUVER UNE ENCLUME DANS LA MAP
+local function getAnvil()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj.Name == "Anvil" and obj:IsA("BasePart") then
+            return obj
+        end
+    end
+    return nil
+end
+
+-- LOGIQUE PRINCIPALE
+RunService.Heartbeat:Connect(function()
+    if not autoAnvilEnabled then return end
+    
+    local anvil = getAnvil()
+    if not anvil then return end
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local root = player.Character:FindFirstChild("HumanoidRootPart")
+            local hum = player.Character:FindFirstChildOfClass("Humanoid")
+            
+            -- Si le joueur est vivant et assez proche
+            if root and hum and hum.Health > 0 then
+                local dist = (LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude
+                
+                if dist < killDistance then
+                    -- On téléporte l'enclume juste au dessus du joueur avec une force vers le bas
+                    anvil.CanCollide = true
+                    anvil.CFrame = root.CFrame * CFrame.new(0, 2, 0)
+                    anvil.Velocity = Vector3.new(0, -1000, 0) -- Force d'écrasement
+                    
+                    -- Simulation d'impact pour les dégâts
+                    firetouchinterest(anvil, root, 0)
+                    firetouchinterest(anvil, root, 1)
+                end
+            end
+        end
+    end
+end)
+
+print("Auto Anvil Kill activé.")
