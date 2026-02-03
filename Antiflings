@@ -1,10 +1,12 @@
 local players = game:GetService("Players")
 local localPlayer = players.LocalPlayer
-local runService = game:GetService("RunService")
 
 workspace.DescendantAdded:Connect(function(descendant)
     pcall(function()
-        if descendant:IsA("Model") and players:GetPlayerFromCharacter(descendant) and descendant ~= localPlayer.Character then
+        if descendant:IsA("Model")
+            and players:GetPlayerFromCharacter(descendant)
+            and descendant ~= localPlayer.Character then
+
             for _, part in ipairs(descendant:GetChildren()) do
                 if part:IsA("BasePart") then
                     part.Massless = true
@@ -16,60 +18,55 @@ end)
 
 task.spawn(function()
     while true do
-        runService.RenderStepped:Wait()
-        if localPlayer.Character then
-            pcall(function()
-                local char = localPlayer.Character
-                local humanoid = char:FindFirstChildOfClass("Humanoid")
-                
-                if char:FindFirstChild("Ragdoll") and char.Ragdoll.Value then
-                    char:FindFirstChild("GetUpEvent"):FireServer()
-                end
-                
-                local damageScripts = {"VelocityDamage", "TakeDamage", "HitHandler", "GetPicked"}
-                for _, name in pairs(damageScripts) do
-                    local s = char:FindFirstChild(name)
-                    if s then
-                        if s:IsA("Script") or s:IsA("LocalScript") then
-                            s.Disabled = true
-                        end
-                        s:Destroy()
+        pcall(function()
+            local char = localPlayer.Character
+            if not char then return end
+
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+            local damageScripts = {
+                "VelocityDamage",
+                "TakeDamage",
+                "HitHandler"
+            }
+
+            for _, name in pairs(damageScripts) do
+                local s = char:FindFirstChild(name)
+                if s then
+                    if s:IsA("Script") or s:IsA("LocalScript") then
+                        s.Disabled = true
                     end
-                end
-
-                if humanoid then
-                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-                    if humanoid.Health > 0 and humanoid.Health < 20 then
-                        humanoid.Health = 100
-                    end
-                end
-
-                if char:FindFirstChild("RightHand") then char.RightHand.Massless = true end
-                if char:FindFirstChild("LeftHand") then char.LeftHand.Massless = true end
-            end)
-        end
-    end
-end)
-
-runService.Stepped:Connect(function()
-    pcall(function()
-        if localPlayer.Character then
-            for _, part in ipairs(localPlayer.Character:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = false
-                    part.Velocity = Vector3.new(0, 0, 0)
-                    part.RotVelocity = Vector3.new(0, 0, 0)
+                    s:Destroy()
                 end
             end
-        end
-    end)
+
+            if humanoid then
+                humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+                if humanoid.Health > 0 and humanoid.Health < 20 then
+                    humanoid.Health = 100
+                end
+            end
+
+            if char:FindFirstChild("RightHand") then
+                char.RightHand.Massless = true
+            end
+
+            if char:FindFirstChild("LeftHand") then
+                char.LeftHand.Massless = true
+            end
+        end)
+
+        task.wait()
+    end
 end)
 
 workspace.DescendantAdded:Connect(function(item)
     pcall(function()
         if item.Name == "Stabler" then
             local weld = item:WaitForChild("ConnectedWeld", 10)
-            if weld and weld.Part1 and weld.Part1:IsDescendantOf(localPlayer.Character) then
+            if weld
+                and weld.Part1
+                and weld.Part1:IsDescendantOf(localPlayer.Character) then
                 item:Destroy()
             end
         end
