@@ -1,100 +1,76 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+local runService = game:GetService("RunService")
 
-local localPlayer = Players.LocalPlayer
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.ResetOnSpawn = false
-screenGui.Parent = localPlayer:WaitForChild("PlayerGui")
-
-local mainFrame = Instance.new("Frame")
-mainFrame.Parent = screenGui
-mainFrame.Size = UDim2.new(0, 230, 0, 240)
-mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-mainFrame.Active = true
-mainFrame.Draggable = true
-
-local titleLabel = Instance.new("TextLabel")
-titleLabel.Parent = mainFrame
-titleLabel.Size = UDim2.new(1, 0, 0, 35)
-titleLabel.BackgroundTransparency = 1
-titleLabel.Text = "ANTI V1 - V4"
-titleLabel.Font = Enum.Font.SourceSansBold
-titleLabel.TextSize = 18
-titleLabel.TextColor3 = Color3.new(1, 1, 1)
-
-local function createToggleButton(text, yPosition)
-    local button = Instance.new("TextButton")
-    button.Parent = mainFrame
-    button.Size = UDim2.new(1, -20, 0, 38)
-    button.Position = UDim2.new(0, 10, 0, yPosition)
-    button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    button.Font = Enum.Font.SourceSans
-    button.TextSize = 16
-    button.TextColor3 = Color3.new(1, 1, 1)
-    button.Text = text .. " : OFF"
-    return button
-end
-
-local antiV1Enabled = false
-local antiV2Enabled = false
-local antiV3Enabled = false
-local antiV4Enabled = false
-
-local antiV1Button = createToggleButton("ANTI V1", 45)
-local antiV2Button = createToggleButton("ANTI V2", 90)
-local antiV3Button = createToggleButton("ANTI V3", 135)
-
-local function updateButton(button, state)
-    button.Text = button.Text:match("(.+):") .. (state and ": ON" or ": OFF")
-    button.BackgroundColor3 = state and Color3.fromRGB(70, 120, 70) or Color3.fromRGB(45, 45, 45)
-end
-
-antiV1Button.MouseButton1Click:Connect(function()
-    antiV1Enabled = not antiV1Enabled
-    updateButton(antiV1Button, antiV1Enabled)
-end)
-
-antiV2Button.MouseButton1Click:Connect(function()
-    antiV2Enabled = not antiV2Enabled
-    updateButton(antiV2Button, antiV2Enabled)
-end)
-
-antiV3Button.MouseButton1Click:Connect(function()
-    antiV3Enabled = not antiV3Enabled
-    updateButton(antiV3Button, antiV3Enabled)
-end)
-
-RunService.Heartbeat:Connect(function()
-    local character = localPlayer.Character
-    if not character then return end
-
-    local rootPart = character:FindFirstChild("HumanoidRootPart")
-    if not rootPart then return end
-
-    if antiV1Enabled then
-        rootPart.AssemblyLinearVelocity = Vector3.zero
-        rootPart.AssemblyAngularVelocity = Vector3.zero
-    end
-
-    if antiV2Enabled then
-        if rootPart.Velocity.Magnitude > 80 then
-            rootPart.Velocity = Vector3.zero
-        end
-        if rootPart.RotVelocity.Magnitude > 40 then
-            rootPart.RotVelocity = Vector3.zero
-        end
-    end
-end)
-
-workspace.DescendantAdded:Connect(function(instance)
-    if not antiV3Enabled then return end
+workspace.DescendantAdded:Connect(function(descendant)
     pcall(function()
-        if instance.Name == "Stabler" then
-            local weld = instance:WaitForChild("ConnectedWeld", 5)
-            if weld and weld.Part1:IsDescendantOf(localPlayer.Character) then
-                instance:Destroy()
+        if descendant:IsA("Model") and players:GetPlayerFromCharacter(descendant) and descendant ~= localPlayer.Character then
+            for _, part in ipairs(descendant:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.Massless = true
+                end
+            end
+        end
+    end)
+end)
+
+task.spawn(function()
+    while true do
+        runService.RenderStepped:Wait()
+        if localPlayer.Character then
+            pcall(function()
+                local char = localPlayer.Character
+                local humanoid = char:FindFirstChildOfClass("Humanoid")
+                
+                if char:FindFirstChild("Ragdoll") and char.Ragdoll.Value then
+                    char:FindFirstChild("GetUpEvent"):FireServer()
+                end
+                
+                local damageScripts = {"VelocityDamage", "TakeDamage", "HitHandler", "GetPicked"}
+                for _, name in pairs(damageScripts) do
+                    local s = char:FindFirstChild(name)
+                    if s then
+                        if s:IsA("Script") or s:IsA("LocalScript") then
+                            s.Disabled = true
+                        end
+                        s:Destroy()
+                    end
+                end
+
+                if humanoid then
+                    humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+                    if humanoid.Health > 0 and humanoid.Health < 20 then
+                        humanoid.Health = 100
+                    end
+                end
+
+                if char:FindFirstChild("RightHand") then char.RightHand.Massless = true end
+                if char:FindFirstChild("LeftHand") then char.LeftHand.Massless = true end
+            end)
+        end
+    end
+end)
+
+runService.Stepped:Connect(function()
+    pcall(function()
+        if localPlayer.Character then
+            for _, part in ipairs(localPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                    part.Velocity = Vector3.new(0, 0, 0)
+                    part.RotVelocity = Vector3.new(0, 0, 0)
+                end
+            end
+        end
+    end)
+end)
+
+workspace.DescendantAdded:Connect(function(item)
+    pcall(function()
+        if item.Name == "Stabler" then
+            local weld = item:WaitForChild("ConnectedWeld", 10)
+            if weld and weld.Part1 and weld.Part1:IsDescendantOf(localPlayer.Character) then
+                item:Destroy()
             end
         end
     end)
